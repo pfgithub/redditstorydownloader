@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": { "*": ["types/*"] },
+        "outDir": "./__",
+        "target": "es2017",
+        "module": "commonjs",
+        "noImplicitAny": true,
+        "lib": ["esnext"],
+        "resolveJsonModule": true,
+        "declaration": true,
+        "strict": true,
+        "types": []
+    }
+}
