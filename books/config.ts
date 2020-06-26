@@ -1,4 +1,6 @@
-[
+import { Entry } from "../src/saveoffline";
+
+export const config: Entry[] = [
     "https://www.reddit.com/r/HFY/wiki/series/first_contact_ralts_bloodthorne",
     "https://www.reddit.com/r/HFY/wiki/series/retreat_hell",
     "https://www.reddit.com/r/HFY/wiki/series/when_the_gods_come_to_visit",
@@ -12,47 +14,48 @@
     "https://www.reddit.com/r/hfy/wiki/series/when_deathworlders_meet",
     "https://www.reddit.com/r/hfy/wiki/series/very_clever_primitives",
     {
-        "type": "series",
-        "title": "Fubsyverse",
-        "author": "ReallyNotMichaelsMom",
-        "entries": [
+        type: "series",
+        title: "Fubsyverse",
+        author: "ReallyNotMichaelsMom",
+        entries: [
             "https://www.reddit.com/r/hfy/wiki/series/the_care_and_feeding_of_humans",
             "https://www.reddit.com/r/hfy/wiki/series/all_about_limniads",
-            "https://www.reddit.com/r/HFY/wiki/series/some_of_my_best_friends_are_human"
-        ]
+            "https://www.reddit.com/r/HFY/wiki/series/some_of_my_best_friends_are_human",
+        ],
     },
     "https://www.reddit.com/r/HFY/wiki/series/three_fleets",
     "https://www.reddit.com/r/HFY/wiki/series/lost_boys",
     "https://www.reddit.com/r/hfy/wiki/series/humans_are_weird",
     "https://www.reddit.com/r/hfy/wiki/series/uplift_protocol",
     {
-        "type": "authorfilter",
-        "author": "Hydrael",
-        "username": "Hydrael",
-        "subreddit": "redditserials",
-        "titlesearch": "A Staff of Crystal and Bone",
-        "title": "A Staff of Crystal and Bone",
-        "stop": "[A Staff of Crystal and Bone] Part 1"
+        type: "authorfilter",
+        author: "Hydrael",
+        username: "Hydrael",
+        subreddit: "redditserials",
+        titlesearch: "A Staff of Crystal and Bone",
+        title: "A Staff of Crystal and Bone",
+        stop: "[A Staff of Crystal and Bone] Part 1",
     },
     {
-        "type": "tocpost",
-        "post": "https://www.reddit.com/r/redditserials/comments/da9uwe/the_dragons_apprentice_index/",
-        "title": "The Dragon's Apprentice"
+        type: "tocpost",
+        post:
+            "https://www.reddit.com/r/redditserials/comments/da9uwe/the_dragons_apprentice_index/",
+        title: "The Dragon's Apprentice",
     },
     {
-        "type": "authorfilter",
-        "author": "Earthfall10",
-        "username": "Earthfall10",
-        "subreddit": "HFY",
-        "titlesearch": "Humans are a Hivemind",
-        "title": "Humans are a Hivemind",
-        "stop": "Humans are a Hivemind."
+        type: "authorfilter",
+        author: "Earthfall10",
+        username: "Earthfall10",
+        subreddit: "HFY",
+        titlesearch: "Humans are a Hivemind",
+        title: "Humans are a Hivemind",
+        stop: "Humans are a Hivemind.",
     },
     {
-        "type": "set",
-        "title": "Short Stories",
-        "author": "Various Authors",
-        "posts": [
+        type: "set",
+        title: "Short Stories",
+        author: "Various Authors",
+        posts: [
             "https://www.reddit.com/r/HFY/comments/a50nnp/a_clerical_error.json",
             "https://www.reddit.com/r/HFY/comments/8a43i1/fuck_it.json",
             "https://www.reddit.com/r/HFY/comments/abqcz7/oc_just_one_ship.json",
@@ -189,7 +192,7 @@
             "https://www.reddit.com/r/HFY/comments/b6zfmv/the_court_case_of_the_pirates_vs_fred_oc.json",
             "https://www.reddit.com/r/HFY/comments/6mdxjg/oc_humans_are_the_galaxies_guard_dogs.json",
             "https://www.reddit.com/r/HFY/comments/c0ojkr/oc_abby514.json",
-            "https://www.reddit.com/r/HFY/comments/6fy1o0/oc_rule_of_the_gricka.json"
-        ]
-    }
-]
+            "https://www.reddit.com/r/HFY/comments/6fy1o0/oc_rule_of_the_gricka.json",
+        ],
+    },
+];

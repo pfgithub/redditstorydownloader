@@ -2,6 +2,7 @@ import fetch from "node-fetch";
 import * as path from "path";
 import { promises as fs } from "fs";
 import * as cp from "child_process";
+import { config } from "../books/config";
 
 async function perr<T>(
     promise: Promise<T>,
@@ -17,7 +18,7 @@ async function perr<T>(
     return { result: result, error: undefined };
 }
 
-type Entry =
+export type Entry =
     | string // hfy wiki page
     | {
           type: "series";
@@ -46,7 +47,6 @@ type Entry =
           posts: string[];
       };
 
-let configFile = path.join(process.cwd(), "books/config.json");
 let cacheDir = path.join(process.cwd(), "cache");
 let distStories = path.join(process.cwd(), "dist/markdown");
 let distEpubs = path.join(process.cwd(), "dist/epub");
@@ -74,8 +74,7 @@ async function run() {
     await fs.mkdir(distEpubs, { recursive: true });
     await fs.mkdir(distKindle, { recursive: true });
 
-    let config = await fs.readFile(configFile, "utf-8");
-    let conf = JSON.parse(config) as Entry[];
+    let conf = config;
 
     let toGenerate: string[] = [];
     for (let entry of conf) {
