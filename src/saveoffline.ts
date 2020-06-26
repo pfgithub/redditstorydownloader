@@ -76,15 +76,14 @@ async function run() {
 
     let conf = config;
 
-    let toGenerate: string[] = [];
-    for (let entry of conf) {
-        console.log("Starting entry", entry);
-        let book = await downloadEntry(entry);
-        let writeResult = await writeBook(book);
-        if (writeResult != null) toGenerate.push(writeResult);
-    }
     await Promise.all(
-        toGenerate.map(async file => {
+        conf.map(async entry => {
+            console.log("Starting entry", entry);
+            let book = await downloadEntry(entry);
+            let writeResult = await writeBook(book);
+            if (writeResult == null) return;
+            let file = writeResult;
+
             let fileName = file.substr(file.lastIndexOf("/"));
             console.log("Pandoc started on " + fileName);
             let epubFile = path.join(distEpubs, fileName + ".epub");
@@ -118,12 +117,12 @@ function safePath(text: string): string {
 
 async function cacheLoad<T>(url: string) {
     let shortURL = url.replace("https://www.reddit.com/", "");
-    console.log("Loading", shortURL);
 
     let pathFile = path.join(cacheDir, safePath(url));
     let cacheText = await perr(fs.readFile(pathFile, "utf-8"));
 
     if (cacheText.error) {
+        console.log("Loading", shortURL);
         let pageData = await (await fetch(url)).text();
         let newCacheText = JSON.stringify({
             lastUpdated: new Date().getTime(),
@@ -133,7 +132,7 @@ async function cacheLoad<T>(url: string) {
         console.log("Downloaded", shortURL);
         return JSON.parse(pageData) as T;
     } else {
-        console.log("Uncached", shortURL);
+        // console.log("Uncached", shortURL);
         return JSON.parse(JSON.parse(cacheText.result).text) as T;
     }
 }
