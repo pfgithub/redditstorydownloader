@@ -55,9 +55,12 @@ let distKindle = path.join(process.cwd(), "dist/kindle");
 function exec(program: string, args: string[]) {
     return new Promise((res, rej) => {
         cp.execFile(program, args, (err, stdout, _stderr) => {
-            if (err) {
+            if (
+                err &&
+                !stdout.includes(":I1037: Mobi file built with WARNINGS!")
+            ) {
                 console.log(err);
-                rej(err);
+                return rej(err);
             }
             console.log(stdout);
             res();
@@ -96,8 +99,7 @@ async function run() {
                 "--toc-depth=1",
             ]);
             console.log("Kindlenge started on " + fileName);
-            let kindlegenResult = await perr(exec("kindlegen", [epubFile]));
-            console.log("Working as intended: ", kindlegenResult.error);
+            await exec("kindlegen", [epubFile]);
             // kindlegen frequently exits with a non-0 exit code
             await fs.rename(kindlegenDistFile, kindleFile);
             console.log("Done with " + fileName);

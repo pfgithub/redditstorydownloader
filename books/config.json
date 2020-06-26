@@ -40,6 +40,15 @@
         "title": "The Dragon's Apprentice"
     },
     {
+        "type": "authorfilter",
+        "author": "Earthfall10",
+        "username": "Earthfall10",
+        "subreddit": "HFY",
+        "titlesearch": "Humans are a Hivemind",
+        "title": "Humans are a Hivemind",
+        "stop": "Humans are a Hivemind."
+    },
+    {
         "type": "set",
         "title": "Short Stories",
         "author": "Various Authors",
