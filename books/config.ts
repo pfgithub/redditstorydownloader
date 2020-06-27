@@ -52,6 +52,15 @@ export const config: Entry[] = [
         stop: "Humans are a Hivemind.",
     },
     {
+        type: "authorfilter",
+        author: "Mackelsaur",
+        username: "Mackelsaur",
+        subreddit: "HFY",
+        titlesearch: "Reverse Engieering",
+        title: "Reverse Engineering",
+        stop: "Reverse Engineering - Part 1",
+    },
+    {
         type: "set",
         title: "Short Stories",
         author: "Various Authors",
