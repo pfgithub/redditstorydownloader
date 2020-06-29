@@ -21,7 +21,7 @@ export const config: Entry[] = [
             "https://www.reddit.com/r/hfy/wiki/series/the_care_and_feeding_of_humans",
             "https://www.reddit.com/r/hfy/wiki/series/all_about_limniads",
             "https://www.reddit.com/r/HFY/wiki/series/some_of_my_best_friends_are_human",
-        ],
+        ], 
     },
     "https://www.reddit.com/r/HFY/wiki/series/three_fleets",
     "https://www.reddit.com/r/HFY/wiki/series/lost_boys",
