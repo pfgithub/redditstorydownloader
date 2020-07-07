@@ -27,6 +27,8 @@ export const config: Entry[] = [
     "https://www.reddit.com/r/HFY/wiki/series/lost_boys",
     "https://www.reddit.com/r/hfy/wiki/series/humans_are_weird",
     "https://www.reddit.com/r/hfy/wiki/series/uplift_protocol",
+    "https://www.reddit.com/r/HFY/wiki/series/elven_paranormal_containment_foundation",
+    "https://www.reddit.com/r/HFY/wiki/series/of_men_and_dragons",
     {
         type: "authorfilter",
         author: "Hydrael",
@@ -59,6 +61,26 @@ export const config: Entry[] = [
         titlesearch: "Reverse Engineering",
         title: "Reverse Engineering",
         stop: "Reverse Engineering - Part 1",
+    },
+    {
+        type: "authorfilter",
+        author: "AngryaboutVideogames",
+        username: "AngryaboutVideogames",
+        subreddit: "HFY",
+        titlesearch: "Frozen Homes",
+        title: "Frozen Homes",
+        stop: "Frozen Homes",
+    },
+    {
+        // there is a toc page but it has too many
+        // links and hasn't been updated recently
+        type: "authorfilter",
+        author: "UpIsOben",
+        username: "UpIsOben",
+        subreddit: "HFY",
+        titlesearch: "We intend no harm",
+        title: "We intend no harm",
+        stop: "[OC] We intend no harm - Chapter 1 (Visitors)",
     },
     {
         type: "set",
