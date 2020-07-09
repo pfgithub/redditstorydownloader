@@ -49,9 +49,9 @@ export const config: Entry[] = [
         author: "Earthfall10",
         username: "Earthfall10",
         subreddit: "HFY",
-        titlesearch: "Humans are a Hivemind",
-        title: "Humans are a Hivemind",
-        stop: "Humans are a Hivemind.",
+        titlesearch: "Humans are ",
+        title: "Humans are ",
+        stop: "Humans are ",
     },
     {
         type: "authorfilter",
