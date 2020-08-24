@@ -82,6 +82,7 @@ export const config: Entry[] = [
         title: "We intend no harm",
         stop: "[OC] We intend no harm - Chapter 1 (Visitors)",
     },
+    "https://www.reddit.com/r/HFY/wiki/series/introduction_to_human_biology",
     {
         type: "set",
         title: "Short Stories",
