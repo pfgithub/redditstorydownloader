@@ -53,7 +53,7 @@ let distEpubs = path.join(process.cwd(), "dist/epub");
 let distKindle = path.join(process.cwd(), "dist/kindle");
 
 function exec(program: string, args: string[]) {
-    return new Promise((res, rej) => {
+    return new Promise<void>((res, rej) => {
         cp.execFile(program, args, (err, stdout, _stderr) => {
             if (
                 err &&
@@ -76,12 +76,18 @@ async function run() {
 
     let conf = config;
 
+    let count = 0;
+
     await Promise.all(
         conf.map(async entry => {
             console.log("Starting entry", entry);
             let book = await downloadEntry(entry);
             let writeResult = await writeBook(book);
-            if (writeResult == null) return;
+            if (writeResult == null) {
+                count++;
+                console.log("«Done with " + JSON.stringify(book.title) + " ("+count+" / "+conf.length+")»");
+                return;
+            }
             let file = writeResult;
 
             let fileName = file.substr(file.lastIndexOf("/"));
@@ -100,7 +106,8 @@ async function run() {
             await exec("kindlegen", [epubFile]);
             // kindlegen frequently exits with a non-0 exit code
             await fs.rename(kindlegenDistFile, kindleFile);
-            console.log("Done with " + fileName);
+            count++;
+            console.log("Done with " + fileName + " ("+count+" / "+conf.length+")");
         }),
     );
     console.log("Done!");
@@ -116,7 +123,7 @@ function safePath(text: string): string {
 }
 
 async function cacheLoad<T>(url: string) {
-    let shortURL = url.replace("https://www.reddit.com/", "");
+    let shortURL = url.replace("https://www.reddit.com/", "").split("?")[0];
 
     let pathFile = path.join(cacheDir, safePath(url));
     let cacheText = await perr(fs.readFile(pathFile, "utf-8"));
@@ -249,7 +256,7 @@ async function downloadWikiSet(wikiText: string): Promise<string> {
         if (!link.url.includes("/comments/")) return false;
         return true;
     });
-    return await downloadManyPosts(links.map(link => link.url + ".json"));
+    return await downloadManyPosts(links.map(link => link.url + ".json?raw_json=1&rtj=yes"));
 }
 
 function hfyWikiMeta(wikiText: string) {
@@ -283,8 +290,8 @@ async function downloadAfter(username: string, after?: string) {
     return await cacheLoad<SubmittedData>(
         "https://www.reddit.com/user/" +
             username +
-            "/submitted.json" +
-            (after ? "?after=" + after : ""),
+            "/submitted.json?raw_json=1&rtj=yes" +
+            (after ? "&after=" + after : ""),
     );
 }
 async function downloadAllPostsFromUser(
@@ -315,7 +322,7 @@ async function downloadAllPostsFromUser(
                     if (l.data.title === stopAt) after = undefined;
                     return l;
                 })
-                .map(l => l.data.url.replace(/\/$/, ".json")),
+                .map(l => l.data.url.replace(/\/$/, ".json?raw_json=1&rtj=yes")),
         );
         if (!after) {
             break;
@@ -326,8 +333,8 @@ async function downloadAllPostsFromUser(
 
 async function downloadEntry(entry: Entry): Promise<EntryResult> {
     if (typeof entry === "string") {
-        let wikiPage = await cacheLoad<WikiEntry>(entry + ".json");
-        let wikiText = wikiPage.data.content_md;
+        let wikiPage = await cacheLoad<WikiEntry>(entry + ".json?raw_json=1&rtj=yes");
+        let wikiText = wikiPage.data.content_md.replace(/\r/g, ""); // ? for some reason selftext has \r? but not in raw_json
         let meta = hfyWikiMeta(wikiText);
         return {
             title: meta.title,
@@ -363,7 +370,7 @@ async function downloadEntry(entry: Entry): Promise<EntryResult> {
         };
     }
     if (entry.type === "tocpost") {
-        let commentPage = await cacheLoad<RedditPost>(entry.post + ".json");
+        let commentPage = await cacheLoad<RedditPost>(entry.post + ".json?raw_json=1&rtj=yes");
         let author = commentPage[0].data.children[0].data.author;
         let wikiText = commentPage[0].data.children[0].data.selftext;
         return {
@@ -398,7 +405,7 @@ ${book.content}
         console.log("Assembled " + outFile);
         return outFile;
     } else {
-        console.log("No changes need to be made to " + outFile);
+        console.log("No changes need to be made to " + book.title);
     }
 }
 

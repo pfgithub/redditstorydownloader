@@ -1,6 +1,7 @@
 import { Entry } from "../src/saveoffline";
 
 export const config: Entry[] = [
+    "https://www.reddit.com/r/hfy/wiki/series/humans_are_hiveminds",
     "https://www.reddit.com/r/HFY/wiki/series/first_contact_ralts_bloodthorne",
     "https://www.reddit.com/r/HFY/wiki/series/retreat_hell",
     "https://www.reddit.com/r/HFY/wiki/series/when_the_gods_come_to_visit",
@@ -43,15 +44,6 @@ export const config: Entry[] = [
         post:
             "https://www.reddit.com/r/redditserials/comments/da9uwe/the_dragons_apprentice_index/",
         title: "The Dragon's Apprentice",
-    },
-    {
-        type: "authorfilter",
-        author: "Earthfall10",
-        username: "Earthfall10",
-        subreddit: "HFY",
-        titlesearch: "Humans are ",
-        title: "Humans are ",
-        stop: "Humans are ",
     },
     {
         type: "authorfilter",
