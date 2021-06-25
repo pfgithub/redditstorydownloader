@@ -92,9 +92,9 @@ async function evaluateEntry(env: Env, entry: Entry) {
         writeResult.meta,
         writeResult.html,
     ]);
-    // log(env, "Kindlenge started on " + fileName);
-    // await exec(env, "kindlegen", [epubFile]);
-    // await fs.rename(kindlegenDistFile, kindleFile);
+    log(env, "Kindlenge started on " + fileName);
+    await exec(env, "kindlegen", [epubFile]);
+    await fs.rename(kindlegenDistFile, kindleFile);
 
     // kindlegen frequently exits with a non-0 exit code
 }
@@ -622,7 +622,11 @@ function renderFormattedText(t: string, f: Richtext.FormatRange[]): string {
     }).join("");
 }
 
-function spanToString(span: Richtext.Span): string {
+type RTEnv = {
+    chapters: Set<string>,
+};
+
+function spanToString(env: RTEnv, span: Richtext.Span): string {
     if(span.e === "text") {
         return renderFormattedText(span.t, span.f ?? []);
     }else if(span.e === "link") {
@@ -630,7 +634,8 @@ function spanToString(span: Richtext.Span): string {
         let updurl = span.u;
         const rcommentsmatch = updurl.match(/\/comments\/(.+?)\//);
         if(rcommentsmatch) {
-            updurl = "#t3_"+rcommentsmatch[1]!;
+            const fullname = "t3_"+rcommentsmatch[1]!;
+            if(env.chapters.has(fullname)) updurl = "#"+fullname;
         }
         return "<a"+(span.a ? " title=\""+escapeHTML(span.a)+"\"" : "")+
         " href=\""+escapeHTML(updurl)+"\">"+renderFormattedText(span.t, span.f ?? [])+"</a>";
@@ -641,51 +646,55 @@ function spanToString(span: Richtext.Span): string {
     }else if(span.e === "br") {
         return "<br />\n";
     }else if(span.e === "spoilertext") {
-        return "«<b>Spoiler!</b>: <span class=\"spoiler\">"+(span.c.map(spanToString).join(""))+"</span>»";
+        return "«<b>Spoiler!</b>: <span class=\"spoiler\">"+(span.c.map(a => spanToString(env, a)).join(""))+"</span>»";
     }else if(span.e === "raw") {
         return escapeHTML(span.t);
     }else throw new Error("TODO span e `"+span.e+"`");
 }
 
-function paragraphToString(par: Richtext.Paragraph): string {
+function paragraphToString(env: RTEnv, par: Richtext.Paragraph): string {
     if(par.e === "par") {
-        return "<p>"+par.c.map(c => spanToString(c)).join("")+"</p>";
+        return "<p>"+par.c.map(c => spanToString(env, c)).join("")+"</p>";
     }else if(par.e === "hr") {
         return "<hr />";
     }else if(par.e === "h") {
-        return "<h"+par.l+">"+par.c.map(spanToString).join("")+"</h"+par.l+">";
+        return "<h"+par.l+">"+par.c.map(a => spanToString(env, a)).join("")+"</h"+par.l+">";
     }else if(par.e === "blockquote") {
-        return "<blockquote>\n"+par.c.map(itm => paragraphToString(itm) + "\n").join("\n")+"</blockquote>";
+        return "<blockquote>\n"+par.c.map(itm => paragraphToString(env, itm) + "\n").join("\n")+"</blockquote>";
     }else if(par.e === "table") {
         return "<table>\n<tr>"+par.h.map(h => {
-            return (h.c ?? []).map(spanToString).join("");
+            return (h.c ?? []).map(a => spanToString(env, a)).join("");
         }).join("")+"</tr>\n"+par.c.map(line => {
-            return "<tr>"+line.map(itm => itm.c.map(spanToString).join("")).join("")+"</tr>";
+            return "<tr>"+line.map(itm => itm.c.map(a => spanToString(env, a)).join("")).join("")+"</tr>";
         })+"</table>";
     }else if(par.e === "code") {
-        return "<pre><code>"+par.c.map(spanToString).join("")+"</code></pre>";
+        return "<pre><code>"+par.c.map(a => spanToString(env, a)).join("")+"</code></pre>";
     }else if(par.e === "list") {
         const is_o = par.o;
 
         return (is_o ? "<ol>" : "<ul>") + "\n" + par.c.map(li => {
-            return "<li>" + li.c.map(paragraphToString).join("") + "</li>\n";
+            return "<li>" + li.c.map(a => paragraphToString(env, a)).join("") + "</li>\n";
         }).join("") + (is_o ? "</ol>" : "</ul>");
     }else throw new Error("TODO par e `"+par.e+"`")
 }
 
-function chapterToString(chapter: Chapter): string {
+function chapterToString(env: RTEnv, chapter: Chapter): string {
     const resmd: string[] = [];
     resmd.push("<h1"+(chapter.fullname ? " id=\""+escapeHTML(chapter.fullname)+"\"" : "")+">" + escapeHTML(chapter.name.title) + "</h1>");
     resmd.push("<i>"+escapeHTML(chapter.name.author)+"</i>");
     resmd.push("<hr />");
 
-    resmd.push(...chapter.rtjson.document.map(par => paragraphToString(par)))
+    resmd.push(...chapter.rtjson.document.map(par => paragraphToString(env, par)))
 
     return resmd.join("\n\n");
 }
 
 function contentToString(content: TextContent): string {
-    return content.chapters.map(chapterToString).join("\n\n<hr />\n\n");
+    const env: RTEnv = {
+        chapters: new Set(),
+    };
+    content.chapters.forEach(chapter => chapter.fullname && env.chapters.add(chapter.fullname));
+    return content.chapters.map(a => chapterToString(env, a)).join("\n\n<hr />\n\n");
 }
 
 async function writeBook(env: Env, book: EntryResult): Promise<{meta: string, html: string} | undefined> {
@@ -693,8 +702,9 @@ async function writeBook(env: Env, book: EntryResult): Promise<{meta: string, ht
     const metadataFile = path.join(distStories, safePath(book.title) + ".json");
 
     await fs.writeFile(metadataFile, JSON.stringify({
-        title: book.title,
-        author: book.author,
+        'title': book.title,
+        'author': book.author,
+        'cover-image': path.resolve(path.join("books", "cover_image.png")),
     }), "utf-8");
 
     const finalContent = contentToString(book.content);
