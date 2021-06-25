@@ -68,6 +68,35 @@ function exec(program: string, args: string[]) {
     });
 }
 
+// todo change all console.log to distlog
+
+async function evaluateEntry(entry: Entry) {
+    console.log("Starting entry", entry);
+    let book = await downloadEntry(entry);
+    let writeResult = await writeBook(book);
+    if (writeResult == null) {
+        return;
+    }
+    let file = writeResult;
+
+    let fileName = file.substr(file.lastIndexOf("/"));
+    console.log("Pandoc started on " + fileName);
+    let epubFile = path.join(distEpubs, fileName + ".epub");
+    let kindlegenDistFile = path.join(distEpubs, fileName + ".mobi");
+    let kindleFile = path.join(distKindle, fileName + ".mobi");
+    await exec("pandoc", [
+        "-o",
+        epubFile,
+        file,
+        "--toc",
+        "--toc-depth=1",
+    ]);
+    console.log("Kindlenge started on " + fileName);
+    await exec("kindlegen", [epubFile]);
+    // kindlegen frequently exits with a non-0 exit code
+    await fs.rename(kindlegenDistFile, kindleFile);
+}
+
 async function run() {
     await fs.mkdir(cacheDir, { recursive: true });
     await fs.mkdir(distStories, { recursive: true });
@@ -78,39 +107,34 @@ async function run() {
 
     let count = 0;
 
-    await Promise.all(
-        conf.map(async entry => {
-            console.log("Starting entry", entry);
-            let book = await downloadEntry(entry);
-            let writeResult = await writeBook(book);
-            if (writeResult == null) {
-                count++;
-                console.log("«Done with " + JSON.stringify(book.title) + " ("+count+" / "+conf.length+")»");
-                return;
-            }
-            let file = writeResult;
+    let results: (number | Error)[] = [];
 
-            let fileName = file.substr(file.lastIndexOf("/"));
-            console.log("Pandoc started on " + fileName);
-            let epubFile = path.join(distEpubs, fileName + ".epub");
-            let kindlegenDistFile = path.join(distEpubs, fileName + ".mobi");
-            let kindleFile = path.join(distKindle, fileName + ".mobi");
-            await exec("pandoc", [
-                "-o",
-                epubFile,
-                file,
-                "--toc",
-                "--toc-depth=1",
-            ]);
-            console.log("Kindlenge started on " + fileName);
-            await exec("kindlegen", [epubFile]);
-            // kindlegen frequently exits with a non-0 exit code
-            await fs.rename(kindlegenDistFile, kindleFile);
-            count++;
-            console.log("Done with " + fileName + " ("+count+" / "+conf.length+")");
+    await Promise.all(
+        conf.map(async (entry, i) => {
+            console.log("Starting entry #"+(i+1));
+            try {
+                const start = Date.now();
+                await evaluateEntry(entry);
+                results[i] = Date.now() - start;
+            }catch(e) {
+                results[i] = e;
+            }
+            console.log("Completed entry #"+(i+1));
         }),
     );
     console.log("Done!");
+
+    results.forEach((result, i) => {
+        console.log("#"+(i+1)+": "+(typeof result === "number" ? "Completed in "+result+"ms." : "Errored:"));
+        if(typeof result !== "number") {
+            console.log(result);
+            console.log(result.stack);
+        }
+    });
+
+    if(!results.every(result => typeof result === "number")) {
+        throw new Error("Errors occured.");
+    }
 }
 
 type CacheFile = {
@@ -303,6 +327,7 @@ async function downloadAllPostsFromUser(
     let lastCount = -1;
     let full = [];
     let after: string | undefined = undefined;
+    let didStop = false;
     while (lastCount !== 0) {
         let userprofile = (await downloadAfter(
             username,
@@ -319,7 +344,10 @@ async function downloadAllPostsFromUser(
                 )
                 .map(l => {
                     console.log(l.data.title);
-                    if (l.data.title === stopAt) after = undefined;
+                    if (l.data.title === stopAt) {
+                        after = undefined;
+                        didStop = true;
+                    }
                     return l;
                 })
                 .map(l => l.data.url.replace(/\/$/, ".json?raw_json=1&rtj=yes")),
@@ -328,6 +356,7 @@ async function downloadAllPostsFromUser(
             break;
         }
     }
+    if(!didStop) throw new Error("Never reached stop title `"+stopAt+"`");
     return full.reverse();
 }
 
