@@ -1,7 +1,6 @@
 {
     "dependencies": {
-        "node-fetch": "^2.6.0",
-        "nodepub": "^3.0.2"
+        "node-fetch": "^2.6.0"
     },
     "devDependencies": {
         "@types/node": "^12.12.21",
@@ -11,6 +10,6 @@
         "typescript": "^4.3.4"
     },
     "scripts": {
-        "go": "ts-node --files src/saveoffline"
+        "go": "ts-node src/saveoffline"
     }
 }

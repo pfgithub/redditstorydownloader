@@ -4,7 +4,6 @@ import { promises as fs } from "fs";
 import * as cp from "child_process";
 import { config } from "../books/config";
 import * as util from "util";
-import * as nodepub from "nodepub";
 
 async function perr<T>(
     promise: Promise<T>,
@@ -78,9 +77,8 @@ async function evaluateEntry(env: Env, entry: Entry) {
     if (writeResult == null) {
         return;
     }
-    let file = writeResult;
 
-    let fileName = file.substr(file.lastIndexOf("/"));
+    let fileName = safePath(book.title);
     log(env, "Pandoc started on " + fileName);
     let epubFile = path.join(distEpubs, fileName + ".epub");
     let kindlegenDistFile = path.join(distEpubs, fileName + ".mobi");
@@ -88,14 +86,17 @@ async function evaluateEntry(env: Env, entry: Entry) {
     await exec(env, "pandoc", [
         "-o",
         epubFile,
-        file,
         "--toc",
         "--toc-depth=1",
+        "--metadata-file",
+        writeResult.meta,
+        writeResult.html,
     ]);
-    log(env, "Kindlenge started on " + fileName);
-    await exec(env, "kindlegen", [epubFile]);
+    // log(env, "Kindlenge started on " + fileName);
+    // await exec(env, "kindlegen", [epubFile]);
+    // await fs.rename(kindlegenDistFile, kindleFile);
+
     // kindlegen frequently exits with a non-0 exit code
-    await fs.rename(kindlegenDistFile, kindleFile);
 }
 
 async function run() {
@@ -280,6 +281,7 @@ export declare namespace Richtext {
 type Chapter = {
     name: {title: string, author: string},
     rtjson: Richtext.Document,
+    fullname: string | undefined,
 };
 type TextContent = {
     chapters: Chapter[],
@@ -316,6 +318,7 @@ type RedditPost = [
                         title: string;
                         author: string;
                         subreddit: string;
+                        name: string,
                     };
                 },
             ];
@@ -376,6 +379,7 @@ async function downloadStory(env: Env, url: string): Promise<Chapter> {
     return {
         name: {title: postData.title, author: "by u/"+postData.author+" on "+postData.subreddit},
         rtjson: {document: fullcontent},
+        fullname: postData.name,
     };
 }
 
@@ -487,9 +491,9 @@ async function downloadEntry(env: Env, entry: Entry): Promise<EntryResult> {
         let resContent: Chapter[] = [];
         for (let entr of entry.entries) {
             let book = await downloadEntry(env, entr);
-            resContent.push({name: {title: book.title, author: "by "+book.author}, rtjson: {document: []}});
+            resContent.push({name: {title: book.title, author: "by "+book.author}, fullname: undefined, rtjson: {document: []}});
             for(const chapter of book.content.chapters) {
-                resContent.push({name: {...chapter.name, title: "• "+chapter.name.title}, rtjson: chapter.rtjson});
+                resContent.push({name: {...chapter.name, title: "• "+chapter.name.title}, fullname: chapter.fullname, rtjson: chapter.rtjson});
             }
         }
         return {
@@ -623,8 +627,13 @@ function spanToString(span: Richtext.Span): string {
         return renderFormattedText(span.t, span.f ?? []);
     }else if(span.e === "link") {
         // TODO link to chapter
+        let updurl = span.u;
+        const rcommentsmatch = updurl.match(/\/comments\/(.+?)\//);
+        if(rcommentsmatch) {
+            updurl = "#t3_"+rcommentsmatch[1]!;
+        }
         return "<a"+(span.a ? " title=\""+escapeHTML(span.a)+"\"" : "")+
-        " href=\""+escapeHTML(span.u)+"\">"+renderFormattedText(span.t, span.f ?? [])+"</a>";
+        " href=\""+escapeHTML(updurl)+"\">"+renderFormattedText(span.t, span.f ?? [])+"</a>";
     }else if(span.e === "u/") {
         return escapeHTML((span.l ? "/" : "") + "u/" + span.t);
     }else if(span.e === "r/") {
@@ -635,7 +644,7 @@ function spanToString(span: Richtext.Span): string {
         return "«<b>Spoiler!</b>: <span class=\"spoiler\">"+(span.c.map(spanToString).join(""))+"</span>»";
     }else if(span.e === "raw") {
         return escapeHTML(span.t);
-    }else return "«ERR|ESPAN "+span.e+"»"; //throw new Error("TODO span e `"+span.e+"`");
+    }else throw new Error("TODO span e `"+span.e+"`");
 }
 
 function paragraphToString(par: Richtext.Paragraph): string {
@@ -661,12 +670,12 @@ function paragraphToString(par: Richtext.Paragraph): string {
         return (is_o ? "<ol>" : "<ul>") + "\n" + par.c.map(li => {
             return "<li>" + li.c.map(paragraphToString).join("") + "</li>\n";
         }).join("") + (is_o ? "</ol>" : "</ul>");
-    }else return "«ERR|EPARA "+par.e+"»"; // throw new Error("TODO par e `"+par.e+"`")
+    }else throw new Error("TODO par e `"+par.e+"`")
 }
 
 function chapterToString(chapter: Chapter): string {
     const resmd: string[] = [];
-    resmd.push("<h1>" + escapeHTML(chapter.name.title) + "</h1>");
+    resmd.push("<h1"+(chapter.fullname ? " id=\""+escapeHTML(chapter.fullname)+"\"" : "")+">" + escapeHTML(chapter.name.title) + "</h1>");
     resmd.push("<i>"+escapeHTML(chapter.name.author)+"</i>");
     resmd.push("<hr />");
 
@@ -679,43 +688,25 @@ function contentToString(content: TextContent): string {
     return content.chapters.map(chapterToString).join("\n\n<hr />\n\n");
 }
 
-async function writeBook(env: Env, book: EntryResult): Promise<string | undefined> {
-    let outFile = path.join(distStories, safePath(book.title) + ".html");
-    let finalContent = `---
-author: "${book.author}"
-title: "${book.title}"
----
+async function writeBook(env: Env, book: EntryResult): Promise<{meta: string, html: string} | undefined> {
+    const resultFile = path.join(distStories, safePath(book.title) + ".html");
+    const metadataFile = path.join(distStories, safePath(book.title) + ".json");
 
-${contentToString(book.content)}
+    await fs.writeFile(metadataFile, JSON.stringify({
+        title: book.title,
+        author: book.author,
+    }), "utf-8");
 
-# that's it`.replace(/\n\n+/g, "\n\n");
-    if(finalContent.includes("«ERR|")) throw new Error("`«ERR|` remaining in output");
-    let existingText = await perr(fs.readFile(outFile, "utf-8"));
+    const finalContent = contentToString(book.content);
+
+    let existingText = await perr(fs.readFile(resultFile, "utf-8"));
     if (existingText.error || existingText.result !== finalContent) {
-        await fs.writeFile(outFile, finalContent, "utf-8");
-        log(env, "Assembled " + outFile);
-
-        const epub = nodepub.document({
-            id: "NONE",
-            genre: "UNKNOWN",
-            title: book.title,
-            author: book.author,
-            copyright: "© "+book.author,
-            cover: "NONE",
-        });
-
-        for(const chapter of book.content.chapters) {
-            epub.addSection(chapter.name.title, chapterToString(chapter));
-        }
-
-        console.log("Writing epub…");
-        const res = await epub.writeEPUB(path.resolve(distEpubs), safePath(book.title));
-        console.log("Done", res);
-
-        return;
-        // return outFile;
+        await fs.writeFile(resultFile, finalContent, "utf-8");
+        log(env, "Assembled " + resultFile);
+        return {meta: metadataFile, html: resultFile};
     } else {
         log(env, "No changes need to be made to " + book.title);
+        return;
     }
 }
 
@@ -755,7 +746,7 @@ function log(env: Env, ...msg: unknown[]) {
         mode = "writeFile";
     }
 
-    const src = ((new Error("").stack ?? "NOLINE").split("\n")[1] ?? "NOLINE").trim();
+    const src = ((new Error("").stack ?? "NOLINE").split("\n")[2] ?? "NOLINE").trim();
     const joined = src + ":\n" +
         msg.map((item: unknown) => item instanceof Error ? item.stack : typeof item === "string" ? item : util.inspect(item)).join(" ")
         .split("\n").map(l => "    "+l).join("\n")
