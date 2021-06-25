@@ -92,6 +92,8 @@ async function evaluateEntry(env: Env, entry: Entry) {
         writeResult.meta,
         writeResult.html,
     ]);
+    // note: consider also emitting
+    // `-o ….html --toc -s` for a neat standalone html file
     log(env, "Kindlenge started on " + fileName);
     await exec(env, "kindlegen", [epubFile]);
     await fs.rename(kindlegenDistFile, kindleFile);
