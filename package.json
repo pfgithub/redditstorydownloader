@@ -11,6 +11,6 @@
         "typescript": "^4.3.4"
     },
     "scripts": {
-        "go": "ts-node src/saveoffline"
+        "go": "ts-node --files src/saveoffline"
     }
 }

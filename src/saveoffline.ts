@@ -4,6 +4,7 @@ import { promises as fs } from "fs";
 import * as cp from "child_process";
 import { config } from "../books/config";
 import * as util from "util";
+import * as nodepub from "nodepub";
 
 async function perr<T>(
     promise: Promise<T>,
@@ -648,11 +649,12 @@ function paragraphToString(par: Richtext.Paragraph): string {
         return "<blockquote>\n"+par.c.map(itm => paragraphToString(itm) + "\n").join("\n")+"</blockquote>";
     }else if(par.e === "table") {
         return "<table>\n<tr>"+par.h.map(h => {
-            console.log(h);
             return (h.c ?? []).map(spanToString).join("");
         }).join("")+"</tr>\n"+par.c.map(line => {
             return "<tr>"+line.map(itm => itm.c.map(spanToString).join("")).join("")+"</tr>";
         })+"</table>";
+    }else if(par.e === "code") {
+        return "<pre><code>"+par.c.map(spanToString).join("")+"</code></pre>";
     }else if(par.e === "list") {
         const is_o = par.o;
 
@@ -662,17 +664,19 @@ function paragraphToString(par: Richtext.Paragraph): string {
     }else return "«ERR|EPARA "+par.e+"»"; // throw new Error("TODO par e `"+par.e+"`")
 }
 
-function contentToString(content: TextContent): string {
-    return content.chapters.map(chapter => {
-        const resmd: string[] = [];
-        resmd.push("<h1>" + escapeHTML(chapter.name.title) + "</h1>");
-        resmd.push("<i>"+escapeHTML(chapter.name.author)+"</i>");
-        resmd.push("<hr />");
+function chapterToString(chapter: Chapter): string {
+    const resmd: string[] = [];
+    resmd.push("<h1>" + escapeHTML(chapter.name.title) + "</h1>");
+    resmd.push("<i>"+escapeHTML(chapter.name.author)+"</i>");
+    resmd.push("<hr />");
 
-        resmd.push(...chapter.rtjson.document.map(par => paragraphToString(par)))
-    
-        return resmd.join("\n\n");
-    }).join("\n\n<hr />\n\n");
+    resmd.push(...chapter.rtjson.document.map(par => paragraphToString(par)))
+
+    return resmd.join("\n\n");
+}
+
+function contentToString(content: TextContent): string {
+    return content.chapters.map(chapterToString).join("\n\n<hr />\n\n");
 }
 
 async function writeBook(env: Env, book: EntryResult): Promise<string | undefined> {
@@ -685,13 +689,31 @@ title: "${book.title}"
 ${contentToString(book.content)}
 
 # that's it`.replace(/\n\n+/g, "\n\n");
+    if(finalContent.includes("«ERR|")) throw new Error("`«ERR|` remaining in output");
     let existingText = await perr(fs.readFile(outFile, "utf-8"));
     if (existingText.error || existingText.result !== finalContent) {
         await fs.writeFile(outFile, finalContent, "utf-8");
         log(env, "Assembled " + outFile);
-        if(finalContent.includes("«ERR|")) throw new Error("`«ERR|` remaining in output");
-        // return outFile; // TODO
+
+        const epub = nodepub.document({
+            id: "NONE",
+            genre: "UNKNOWN",
+            title: book.title,
+            author: book.author,
+            copyright: "© "+book.author,
+            cover: "NONE",
+        });
+
+        for(const chapter of book.content.chapters) {
+            epub.addSection(chapter.name.title, chapterToString(chapter));
+        }
+
+        console.log("Writing epub…");
+        const res = await epub.writeEPUB(path.resolve(distEpubs), safePath(book.title));
+        console.log("Done", res);
+
         return;
+        // return outFile;
     } else {
         log(env, "No changes need to be made to " + book.title);
     }
