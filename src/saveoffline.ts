@@ -334,7 +334,7 @@ async function downloadAllPostsFromUser(
 async function downloadEntry(entry: Entry): Promise<EntryResult> {
     if (typeof entry === "string") {
         let wikiPage = await cacheLoad<WikiEntry>(entry + ".json?raw_json=1&rtj=yes");
-        let wikiText = wikiPage.data.content_md.replace(/\r/g, ""); // ? for some reason selftext has \r? but not in raw_json
+        let wikiText = wikiPage.data.content_md.replace(/\r/g, "");
         let meta = hfyWikiMeta(wikiText);
         return {
             title: meta.title,
