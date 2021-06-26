@@ -617,7 +617,7 @@ function renderFormattedText(t: string, f: Richtext.FormatRange[]): string {
             let wrapped = escapeHTML(el.text);
             if(el.styles.strong) wrapped = `<b>${wrapped}</b>`;
             if(el.styles.emphasis) wrapped = `<i>${wrapped}</i>`;
-            if(el.styles.strikethrough) wrapped = `<s>${wrapped}</s>`;
+            if(el.styles.strikethrough) wrapped = `<del>${wrapped}</del>`;
             if(el.styles.superscript) wrapped = `<sup>${wrapped}</sup>`;
             return wrapped;
         }
