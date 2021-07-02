@@ -29,12 +29,12 @@ export type Entry =
       }
     | {
           type: "authorfilter";
-          author: string;
+          author?: string;
           username: string;
           subreddit: string;
-          titlesearch: string;
+          titlesearch?: string;
           title: string;
-          stop: string;
+          stop?: string;
       }
     | {
           type: "tocpost";
@@ -440,7 +440,7 @@ async function downloadAllPostsFromUser(
     username: string,
     subreddit: string,
     titleFilter: (title: string) => boolean,
-    stopAt: string,
+    stopAt: string | undefined,
 ) {
     let lastCount = -1;
     let full = [];
@@ -462,7 +462,7 @@ async function downloadAllPostsFromUser(
                 )
                 .map(l => {
                     log(env, l.data.title);
-                    if (l.data.title === stopAt) {
+                    if (stopAt != null && l.data.title === stopAt) {
                         after = undefined;
                         didStop = true;
                     }
@@ -474,7 +474,7 @@ async function downloadAllPostsFromUser(
             break;
         }
     }
-    if(!didStop) throw new Error("Never reached stop title `"+stopAt+"`");
+    if(!didStop && stopAt != null) throw new Error("Never reached stop title `"+stopAt+"`");
     return full.reverse();
 }
 
@@ -509,12 +509,12 @@ async function downloadEntry(env: Env, entry: Entry): Promise<EntryResult> {
     if (entry.type === "authorfilter") {
         return {
             title: entry.title,
-            author: entry.author,
+            author: entry.author ?? entry.username,
             content: await downloadManyPosts(env,
                 await downloadAllPostsFromUser(env,
                     entry.username,
                     entry.subreddit,
-                    t => t.includes(entry.titlesearch),
+                    t => entry.titlesearch != null ? t.includes(entry.titlesearch) : true,
                     entry.stop,
                 ),
             ),

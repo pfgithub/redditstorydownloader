@@ -1,7 +1,45 @@
 import { Entry } from "../src/saveoffline";
 
 export const config: Entry[] = [
+    {
+        type: "authorfilter",
+        title: "[1] The Collective, The Elements, …",
+        subreddit: "HFY",
+        username: "arclightmagus",
+    },
+    {
+        type: "authorfilter",
+        title: "[1] Why Humans Avoid War, …",
+        subreddit: "HFY",
+        username: "SpacePaladin15",
+    },
+    {
+        type: "authorfilter",
+        title: "[1] Tales From the Terran Republic, …",
+        subreddit: "HFY",
+        username: "slightlyassholic",
+    },
+    {
+        type: "authorfilter",
+        title: "[1] Galactic Daycare",
+        subreddit: "HFY",
+        username: "Count_Mechula",
+    },
+    {
+        type: "authorfilter",
+        title: "[1] The Means of Production",
+        subreddit: "HFY",
+        username: "Bergusia",
+    },
+    {
+        type: "authorfilter",
+        title: "[1] Unleashed, The Doorman, …",
+        subreddit: "HFY",
+        username: "Sooperdude24",
+    },
     "https://www.reddit.com/r/hfy/wiki/series/humans_are_hiveminds",
+];
+export const prev_config: Entry[] = [
     "https://www.reddit.com/r/HFY/wiki/series/first_contact_ralts_bloodthorne",
     "https://www.reddit.com/r/HFY/wiki/series/retreat_hell",
     "https://www.reddit.com/r/HFY/wiki/series/when_the_gods_come_to_visit",
