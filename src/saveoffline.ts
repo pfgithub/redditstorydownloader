@@ -50,6 +50,7 @@ export type Entry =
 
 let cacheDir = path.join(process.cwd(), "cache");
 let distStories = path.join(process.cwd(), "dist/html");
+let distHtmls = path.join(process.cwd(), "dist/htmls");
 let distEpubs = path.join(process.cwd(), "dist/epub");
 let distKindle = path.join(process.cwd(), "dist/kindle");
 let distLog = path.join(process.cwd(), "dist/logs");
@@ -81,6 +82,7 @@ async function evaluateEntry(env: Env, entry: Entry) {
     let fileName = safePath(book.title);
     log(env, "Pandoc started on " + fileName);
     let epubFile = path.join(distEpubs, fileName + ".epub");
+    let htmlFile = path.join(distHtmls, fileName + ".html");
     let kindlegenDistFile = path.join(distEpubs, fileName + ".mobi");
     let kindleFile = path.join(distKindle, fileName + ".mobi");
     await exec(env, "pandoc", [
@@ -93,6 +95,16 @@ async function evaluateEntry(env: Env, entry: Entry) {
         writeResult.html,
     ]);
     // note: consider also emitting
+    await exec(env, "pandoc", [
+        "-o",
+        htmlFile,
+        "--toc",
+        "--toc-depth=1",
+        "--standalone",
+        "--metadata-file",
+        writeResult.meta,
+        writeResult.html,
+    ]);
     // `-o ….html --toc -s` for a neat standalone html file
     log(env, "Kindlenge started on " + fileName);
     await exec(env, "kindlegen", [epubFile]);
@@ -104,6 +116,7 @@ async function evaluateEntry(env: Env, entry: Entry) {
 async function run() {
     await fs.mkdir(cacheDir, { recursive: true });
     await fs.mkdir(distStories, { recursive: true });
+    await fs.mkdir(distHtmls, { recursive: true });
     await fs.mkdir(distEpubs, { recursive: true });
     await fs.mkdir(distKindle, { recursive: true });
     await fs.mkdir(distLog, { recursive: true });
@@ -160,7 +173,7 @@ async function cacheLoad<T>(env: Env, url: string) {
 
     if (cacheText.error) {
         log(env, "Loading", shortURL);
-        let pageData = await (await fetch(url)).text();
+        let pageData = await (await fetch(encodeURI(url))).text();
         let newCacheText = JSON.stringify({
             lastUpdated: new Date().getTime(),
             text: pageData,
@@ -170,7 +183,21 @@ async function cacheLoad<T>(env: Env, url: string) {
         return JSON.parse(pageData) as T;
     } else {
         // log(env, "Uncached", shortURL);
-        return JSON.parse(JSON.parse(cacheText.result).text) as T;
+        try {
+            let cres = cacheText.result;
+            if(cres.endsWith(`"}"}`) && !cres.endsWith(`\\"}"}`)) {
+                // ^ ???? i have no idea how this happened
+                // is my drive corrupted?
+                // i'm literally writing the file with the exact stringified value
+                const itms = cres.split(`"}`);
+                itms.pop();
+                cres = itms.join(`"}`);
+            }
+            return JSON.parse(JSON.parse(cres).text) as T;
+        }catch(e) {
+            console.log("E_JSON", pathFile, url);
+            throw e;
+        }
     }
 }
 
