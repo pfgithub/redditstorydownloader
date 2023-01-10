@@ -6,6 +6,10 @@ usage: `bun src/saveoffline.ts`
 
 configuration: create `books/config.ts`
 
+mobile reading: use https://pfg.pw/sitepages/reader
+
+mobile downloading: use the application from the terminal. TODO: implement rsd directly into threadclient, or at least make a web app for it
+
 ## known issues
 
 formatting is not perfect. pandoc markdown is different from reddit markdown. no attempt is made to remove in-post headings, so posts may occasionally have unusual headings. no attempt is made to link to chapters, so in-post "next" and "previous" links are real web browser links.
